@@ -1,409 +1,108 @@
 import streamlit as st
-import feedparser
-import re
-import math
 import time
-from datetime import datetime
 from model import FakeNewsClassifier
-from news_fetcher import fetch_news
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# ── Page config ─────────────────────────────────────────
 st.set_page_config(
     page_title="Fake News Detector",
     page_icon="🔍",
-    layout="wide",
-    initial_sidebar_state="collapsed",
+    layout="wide"
 )
 
-# ── Custom CSS ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap');
-
-/* Global */
-html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
-}
-
-/* Hide Streamlit defaults */
-#MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 3rem 3rem 3rem; max-width: 1100px; }
-
-/* Masthead */
-.masthead {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    border-bottom: 1.5px solid #1a1a1a;
-    padding-bottom: 0.75rem;
-    margin-bottom: 2rem;
-}
-.logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 2rem;
-    color: #0f0f0f;
-    letter-spacing: -0.02em;
-}
-.logo span { font-style: italic; color: #c0392b; }
-.tagline {
-    font-size: 0.7rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #888;
-    font-weight: 500;
-}
-.timestamp {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: #aaa;
-}
-
-/* Verdict card */
-.verdict-real {
-    background: #f0faf3;
-    border: 1.5px solid #2ecc71;
-    border-radius: 10px;
-    padding: 1.25rem 1.5rem;
-    margin: 1rem 0;
-}
-.verdict-fake {
-    background: #fff5f5;
-    border: 1.5px solid #e74c3c;
-    border-radius: 10px;
-    padding: 1.25rem 1.5rem;
-    margin: 1rem 0;
-}
-.verdict-uncertain {
-    background: #fffbf0;
-    border: 1.5px solid #f39c12;
-    border-radius: 10px;
-    padding: 1.25rem 1.5rem;
-    margin: 1rem 0;
-}
-.verdict-label {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.6rem;
-    font-weight: 400;
-    margin-bottom: 0.25rem;
-}
-.verdict-sub {
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #666;
-}
-
-/* Metric pill */
-.metric-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 0.75rem 0;
-}
-.metric-pill {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 0.5rem 0.9rem;
-    font-size: 0.78rem;
-    color: #444;
-    font-family: 'DM Mono', monospace;
-}
-.metric-pill strong { color: #0f0f0f; font-size: 1rem; display: block; }
-
-/* Word pills */
-.word-fake {
-    display: inline-block;
-    background: #fde8e8;
-    color: #922b21;
-    border-radius: 99px;
-    padding: 2px 10px;
-    font-size: 0.75rem;
-    margin: 2px;
-    font-weight: 500;
-}
-.word-real {
-    display: inline-block;
-    background: #e8f8ee;
-    color: #1a6635;
-    border-radius: 99px;
-    padding: 2px 10px;
-    font-size: 0.75rem;
-    margin: 2px;
-    font-weight: 500;
-}
-
-/* News card */
-.news-card {
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 0.75rem;
-    transition: border-color 0.2s;
-}
-.news-card:hover { border-color: #bbb; }
-.news-card-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1rem;
-    color: #0f0f0f;
-    margin-bottom: 0.25rem;
-    line-height: 1.4;
-}
-.news-card-meta {
-    font-size: 0.72rem;
-    color: #999;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-}
-.news-card-desc {
-    font-size: 0.82rem;
-    color: #555;
-    line-height: 1.55;
-}
-
-/* Tag badges */
-.badge-real { background:#e8f8ee; color:#1a6635; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
-.badge-fake { background:#fde8e8; color:#922b21; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
-.badge-uncertain { background:#fff3e0; color:#7d4b00; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
-
-/* Section label */
-.section-label {
-    font-size: 0.68rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #999;
-    font-weight: 500;
-    border-left: 2px solid #e74c3c;
-    padding-left: 8px;
-    margin-bottom: 0.75rem;
-}
-
-/* Divider */
-.rule { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
-
-/* Textarea override */
-.stTextArea textarea {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.9rem !important;
-    border-radius: 8px !important;
-    border-color: #ddd !important;
-}
-
-/* Button override */
-.stButton > button {
-    background: #0f0f0f !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 6px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.04em !important;
-    padding: 0.5rem 1.5rem !important;
-    transition: opacity 0.15s !important;
-}
-.stButton > button:hover { opacity: 0.82 !important; }
-
-/* Score bar container */
-.score-bar-outer {
-    background: #f0f0f0;
-    border-radius: 99px;
-    height: 8px;
-    margin: 0.5rem 0 1rem 0;
-    overflow: hidden;
-}
-.score-bar-inner {
-    height: 100%;
-    border-radius: 99px;
-    transition: width 0.5s ease;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ── Init model ─────────────────────────────────────────────────────────────────
+# ── Load Model ─────────────────────────────────────────
 @st.cache_resource
 def load_model():
     return FakeNewsClassifier()
 
 model = load_model()
 
-# ── Masthead ───────────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div class="masthead">
-    <div>
-        <div class="logo">FAKE NEWS<span>DETECTOR</span></div>
-    </div>
-</div>
+# ── Header ─────────────────────────────────────────
+st.markdown("""
+<h1 style='font-family:DM Serif Display;'>
+FAKE NEWS <span style='color:red;'>DETECTOR</span>
+</h1>
 """, unsafe_allow_html=True)
 
-# ── Tabs ───────────────────────────────────────────────────────────────────────
-tab1 = st.tab(["📝  Analyse text"])
+# ── Layout ─────────────────────────────────────────
+col_input, col_result = st.columns([1, 1])
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 1 — Analyse text
-# ═══════════════════════════════════════════════════════════════════════════════
-with tab1:
-    col_input, col_result = st.columns([1.05, 0.95], gap="large")
+# ── INPUT SECTION ─────────────────────────────────────────
+with col_input:
+    st.subheader("📝 Input Text")
 
-    with col_input:
-        st.markdown('<div class="section-label">Input</div>', unsafe_allow_html=True)
-        text_input = st.text_area(
-            label="",
-            placeholder="Paste a news article, headline, or any claim here...",
-            height=220,
-            label_visibility="collapsed",
-        )
+    text_input = st.text_area(
+        "Enter News",
+        placeholder="Paste news article or headline...",
+        height=200
+    )
 
-        mode = st.radio(
-            "Content type",
-            ["Article"],
-            horizontal=True,
-            label_visibility="visible",
-        )
+    analyse = st.button("Analyse")
 
-        col_btn, col_info = st.columns([1, 2])
-        with col_btn:
-            analyse = st.button("Analyse →", use_container_width=True)
-      
+# ── RESULT SECTION ─────────────────────────────────────────
+with col_result:
+    st.subheader("📊 Result")
 
-    with col_result:
-        if analyse and text_input.strip():
-            with st.spinner("Running classifier..."):
-                time.sleep(0.3)
-                result = model.predict(text_input)
+    if analyse and text_input.strip():
 
-            # Verdict card
-            r = result['real_prob']
-            if r >= 65:
-                cls = "real"; label = "✓ Likely Real"; color = "#27ae60"
-            elif r <= 35:
-                cls = "fake"; label = "✕ Likely Fake"; color = "#e74c3c"
-            else:
-                cls = "uncertain"; label = "? Uncertain"; color = "#f39c12"
+        with st.spinner("Analyzing..."):
+            time.sleep(0.3)
+            result = model.predict(text_input)
 
-            bar_color = "#27ae60" if r >= 65 else ("#e74c3c" if r <= 35 else "#f39c12")
+        r = result['real_prob']
 
-            st.markdown(f"""
-            <div class="verdict-{cls}">
-                <div class="verdict-label" style="color:{color}">{label}</div>
-                <div class="verdict-sub">Credibility confidence: {r}%</div>
-                <div class="score-bar-outer" style="margin-top:0.75rem">
-                    <div class="score-bar-inner" style="width:{r}%;background:{bar_color}"></div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Metrics
-            f = result['features']
-            st.markdown(f"""
-            <div class="metric-row">
-                <div class="metric-pill"><strong>{f['word_count']}</strong>words</div>
-                <div class="metric-pill"><strong>{f['sensational']}</strong>sensational</div>
-                <div class="metric-pill"><strong>{f['caps_ratio']}%</strong>CAPS ratio</div>
-                <div class="metric-pill"><strong>{f['hedges']}</strong>hedge words</div>
-                <div class="metric-pill"><strong>{f['exclaims']}</strong>exclamations</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown('<hr class="rule">', unsafe_allow_html=True)
-            st.markdown('<div class="section-label">Vocabulary signals</div>', unsafe_allow_html=True)
-
-            fake_html = " ".join(f'<span class="word-fake">{w}</span>' for w in result['matched_fake']) or "<span style='color:#bbb;font-size:0.8rem'>none</span>"
-            real_html = " ".join(f'<span class="word-real">{w}</span>' for w in result['matched_real']) or "<span style='color:#bbb;font-size:0.8rem'>none</span>"
-
-            st.markdown(f"<div style='margin-bottom:0.5rem'><b style='font-size:0.78rem;color:#e74c3c;letter-spacing:.05em'>MISINFORMATION SIGNALS</b><br>{fake_html}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div><b style='font-size:0.78rem;color:#27ae60;letter-spacing:.05em'>CREDIBILITY SIGNALS</b><br>{real_html}</div>", unsafe_allow_html=True)
-
-            # Score breakdown chart
-            # Score breakdown
-            st.markdown('<hr class="rule">', unsafe_allow_html=True)
-            st.markdown('<div class="section-label">Score breakdown</div>', unsafe_allow_html=True)
-            max_score = max(result['real_score'], result['fake_score'], 1)
-            real_pct = round((result['real_score'] / max_score) * 100)
-            fake_pct = round((result['fake_score'] / max_score) * 100)
-            st.markdown(f"""
-            <div style="margin-top:0.5rem">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-               <div style="font-size:0.78rem;color:#27ae60;font-weight:500;width:90px">Real score</div>
-               <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
-                   <div style="width:{real_pct}%;height:100%;background:#27ae60;border-radius:99px"></div>
-                 </div>
-                 <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['real_score']}</div>
-               </div>
-               <div style="display:flex;align-items:center;gap:10px">
-                 <div style="font-size:0.78rem;color:#e74c3c;font-weight:500;width:90px">Fake score</div>
-                 <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
-                   <div style="width:{fake_pct}%;height:100%;background:#e74c3c;border-radius:99px"></div>
-                 </div>
-                 <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['fake_score']}</div>
-               </div>
-             </div>
-            """, unsafe_allow_html=True)
-
-        elif analyse:
-            st.warning("Please enter some text to analyse.")
+        # ── Verdict Logic ─────────────────────────
+        if r >= 65:
+            label = "✅ Likely Real"
+            color = "green"
+        elif r <= 35:
+            label = "❌ Likely Fake"
+            color = "red"
         else:
-            st.markdown("""
-            <div style="padding: 3rem 1rem; text-align: center; color: #bbb;">
-                <div style="font-family:'DM Serif Display',serif;font-size:2rem;margin-bottom:0.5rem">← Paste text</div>
-                <div style="font-size:0.82rem">Results will appear here after analysis</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-            if st.button(f"Analyse →", key=f"art_{i}"):
-                    st.session_state.selected_article = i
+            label = "⚠️ Uncertain"
+            color = "orange"
 
-                 with col_detail:
-                    st.markdown('<div class="section-label">Detail analysis</div>', unsafe_allow_html=True)
+        # ── Display Result ─────────────────────────
+        st.markdown(f"""
+        <div style="padding:15px;border-radius:10px;border:2px solid {color};">
+            <h2 style="color:{color};">{label}</h2>
+            <p>Confidence: <b>{r}%</b></p>
+        </div>
+        """, unsafe_allow_html=True)
 
-            idx = st.session_state.selected_article
-            if idx is not None and idx < len(articles):
-                art = articles[idx]
-                full_text = art["title"] + " " + art.get("description", "")
-                result = model.predict(full_text)
-                r = result["real_prob"]
+        # ── Metrics ─────────────────────────
+        f = result['features']
 
-                bar_color = "#27ae60" if r >= 65 else ("#e74c3c" if r <= 35 else "#f39c12")
-                if r >= 65:
-                    cls = "real"; label = "✓ Likely Real"; color = "#27ae60"
-                elif r <= 35:
-                    cls = "fake"; label = "✕ Likely Fake"; color = "#e74c3c"
-                else:
-                    cls = "uncertain"; label = "? Uncertain"; color = "#f39c12"
+        st.write("### 📌 Analysis Metrics")
+        st.write(f"Words: {f['word_count']}")
+        st.write(f"Sensational Words: {f['sensational']}")
+        st.write(f"CAPS Ratio: {f['caps_ratio']}%")
+        st.write(f"Hedges: {f['hedges']}")
+        st.write(f"Exclamations: {f['exclaims']}")
 
-                st.markdown(f"""
-                <div class="verdict-{cls}">
-                    <div class="verdict-label" style="color:{color}">{label}</div>
-                    <div class="verdict-sub">Real probability: {r}%</div>
-                    <div class="score-bar-outer" style="margin-top:0.75rem">
-                        <div class="score-bar-inner" style="width:{r}%;background:{bar_color}"></div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+        # ── Vocabulary Signals ─────────────────────────
+        st.write("### 🧠 Vocabulary Signals")
 
-                f = result['features']
-                st.markdown(f"""
-                <div class="metric-row">
-                    <div class="metric-pill"><strong>{f['word_count']}</strong>words</div>
-                    <div class="metric-pill"><strong>{f['sensational']}</strong>sensational</div>
-                    <div class="metric-pill"><strong>{f['caps_ratio']}%</strong>CAPS</div>
-                    <div class="metric-pill"><strong>{f['hedges']}</strong>hedges</div>
-                </div>
-                """, unsafe_allow_html=True)
+        st.write("**Fake Indicators:**")
+        if result['matched_fake']:
+            st.write(", ".join(result['matched_fake']))
+        else:
+            st.write("None")
 
-                fake_html = " ".join(f'<span class="word-fake">{w}</span>' for w in result['matched_fake']) or "<span style='color:#bbb;font-size:0.8rem'>none detected</span>"
-                real_html = " ".join(f'<span class="word-real">{w}</span>' for w in result['matched_real']) or "<span style='color:#bbb;font-size:0.8rem'>none detected</span>"
+        st.write("**Real Indicators:**")
+        if result['matched_real']:
+            st.write(", ".join(result['matched_real']))
+        else:
+            st.write("None")
 
-                st.markdown(f"**Misinformation signals**<br>{fake_html}", unsafe_allow_html=True)
-                st.markdown(f"**Credibility signals**<br>{real_html}", unsafe_allow_html=True)
+        # ── Score Breakdown ─────────────────────────
+        st.write("### 📊 Score Breakdown")
 
-                if art.get("link"):
-                    st.markdown(f"[Read full article →]({art['link']})")
-            else:
-                st.markdown("""
-                <div style="padding:3rem 1rem;text-align:center;color:#bbb">
-                    <div style="font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:0.5rem">Click any article</div>
-                    <div style="font-size:0.82rem">to see detailed ML analysis</div>
-                </div>
-                """, unsafe_allow_html=True)
+        st.progress(r / 100)
+        st.write(f"Real Score: {result['real_score']}")
+        st.write(f"Fake Score: {result['fake_score']}")
+
+    elif analyse:
+        st.warning("⚠️ Please enter text first")
+
+    else:
+        st.info("Enter text and click Analyse")
