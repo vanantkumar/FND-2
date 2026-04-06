@@ -19,7 +19,7 @@ model = load_model()
 # ── Header ─────────────────────────────────────────
 st.markdown("""
 <h1 style='font-family:DM Serif Display;'>
-FAKE NEWS <span style='color:red;'>DETECTOR</span>
+<span style='color:red;'>FAKE NEWS <span style='color:blue;'>DETECTOR</span>
 </h1>
 """, unsafe_allow_html=True)
 
@@ -28,7 +28,7 @@ col_input, col_result = st.columns([1, 1])
 
 # ── INPUT SECTION ─────────────────────────────────────────
 with col_input:
-    st.subheader("📝 Input Text")
+    st.subheader("Input NEWS")
 
     text_input = st.text_area(
         "Enter News",
@@ -40,7 +40,7 @@ with col_input:
 
 # ── RESULT SECTION ─────────────────────────────────────────
 with col_result:
-    st.subheader("📊 Result")
+    st.subheader("Result")
 
     if analyse and text_input.strip():
 
