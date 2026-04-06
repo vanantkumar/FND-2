@@ -320,8 +320,8 @@ with tab1:
 
             # Score breakdown chart
            # Score breakdown
-             st.markdown('<hr class="rule">', unsafe_allow_html=True)
-             st.markdown('<div class="section-label">Score breakdown</div>', unsafe_allow_html=True)
+          st.markdown('<hr class="rule">', unsafe_allow_html=True)
+          st.markdown('<div class="section-label">Score breakdown</div>', unsafe_allow_html=True)
              max_score = max(result['real_score'], result['fake_score'], 1)
              real_pct = round((result['real_score'] / max_score) * 100)
              fake_pct = round((result['fake_score'] / max_score) * 100)
