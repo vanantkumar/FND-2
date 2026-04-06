@@ -342,7 +342,7 @@ with tab1:
                  <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['fake_score']}</div>
                </div>
              </div>
-             """, unsafe_allow_html=True)
+          """, unsafe_allow_html=True)
 
         elif analyse:
             st.warning("Please enter some text to analyse.")
