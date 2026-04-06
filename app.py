@@ -116,5 +116,5 @@ elif analyse:
 else:
     st.info("👆 Paste content above and click Analyse")
 
-    else:
+else:
         st.info("Enter text and click Analyse")
