@@ -320,29 +320,29 @@ with tab1:
 
             # Score breakdown chart
            # Score breakdown
-st.markdown('<hr class="rule">', unsafe_allow_html=True)
-st.markdown('<div class="section-label">Score breakdown</div>', unsafe_allow_html=True)
-max_score = max(result['real_score'], result['fake_score'], 1)
-real_pct = round((result['real_score'] / max_score) * 100)
-fake_pct = round((result['fake_score'] / max_score) * 100)
-st.markdown(f"""
-<div style="margin-top:0.5rem">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-    <div style="font-size:0.78rem;color:#27ae60;font-weight:500;width:90px">Real score</div>
-    <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
-      <div style="width:{real_pct}%;height:100%;background:#27ae60;border-radius:99px"></div>
-    </div>
-    <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['real_score']}</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <div style="font-size:0.78rem;color:#e74c3c;font-weight:500;width:90px">Fake score</div>
-    <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
-      <div style="width:{fake_pct}%;height:100%;background:#e74c3c;border-radius:99px"></div>
-    </div>
-    <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['fake_score']}</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+             st.markdown('<hr class="rule">', unsafe_allow_html=True)
+             st.markdown('<div class="section-label">Score breakdown</div>', unsafe_allow_html=True)
+             max_score = max(result['real_score'], result['fake_score'], 1)
+             real_pct = round((result['real_score'] / max_score) * 100)
+             fake_pct = round((result['fake_score'] / max_score) * 100)
+             st.markdown(f"""
+             <div style="margin-top:0.5rem">
+               <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                 <div style="font-size:0.78rem;color:#27ae60;font-weight:500;width:90px">Real score</div>
+                 <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
+                   <div style="width:{real_pct}%;height:100%;background:#27ae60;border-radius:99px"></div>
+                 </div>
+                 <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['real_score']}</div>
+               </div>
+               <div style="display:flex;align-items:center;gap:10px">
+                 <div style="font-size:0.78rem;color:#e74c3c;font-weight:500;width:90px">Fake score</div>
+                 <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;overflow:hidden">
+                   <div style="width:{fake_pct}%;height:100%;background:#e74c3c;border-radius:99px"></div>
+                 </div>
+                 <div style="font-size:0.78rem;color:#444;width:36px;text-align:right">{result['fake_score']}</div>
+               </div>
+             </div>
+             """, unsafe_allow_html=True)
 
         elif analyse:
             st.warning("Please enter some text to analyse.")
