@@ -18,19 +18,24 @@ model = load_model()
 
 # ── Header ─────────────────────────────────────────
 st.markdown("""
-<h1 style='text-align:center;font-family:DM Serif Display;'>
- <span style='color:red;'>FAKE  <span style='color:blue;'> NEWS <span style='color:black;'>DETECTOR</span>
+<h1 style='text-align:center; font-family:serif;'>
+    <span style='color:red;'>FAKE</span> 
+    <span style='color:blue;'>NEWS</span> 
+    <span style='color:black;'>DETECTOR</span>
 </h1>
+<p style='text-align:center; color:gray;'>
+    AI-powered credibility analysis system
+</p>
 """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ── INPUT SECTION ─────────────────────────────────────────
+# ── Input Section ─────────────────────────────────────────
 st.subheader("📝 Enter News Content")
 
 text_input = st.text_area(
     "",
-    placeholder="Paste a news article / headline",
+    placeholder="Paste a news article or headline here...",
     height=200
 )
 
@@ -38,7 +43,7 @@ analyse = st.button("🔍 Analyse", use_container_width=True)
 
 st.markdown("---")
 
-# ── RESULT SECTION ─────────────────────────────────────────
+# ── Result Section ─────────────────────────────────────────
 if analyse and text_input.strip():
 
     with st.spinner("Analyzing..."):
@@ -60,8 +65,13 @@ if analyse and text_input.strip():
 
     # ── Verdict Card ─────────────────────────
     st.markdown(f"""
-    <div style="padding:20px;border-radius:10px;border:2px solid {color};text-align:center;">
-        <h2 style="color:{color};margin-bottom:5px;">{label}</h2>
+    <div style="
+        padding:20px;
+        border-radius:10px;
+        border:2px solid {color};
+        text-align:center;
+    ">
+        <h2 style="color:{color}; margin-bottom:5px;">{label}</h2>
         <p>Confidence Score: <b>{r}%</b></p>
     </div>
     """, unsafe_allow_html=True)
@@ -110,11 +120,10 @@ if analyse and text_input.strip():
     st.write(f"Real Score: {result['real_score']}")
     st.write(f"Fake Score: {result['fake_score']}")
 
-    elif analyse:
+# ── Warning Section ─────────────────────────────────────────
+elif analyse:
     st.warning("⚠️ Please enter text to analyse")
 
-        else:
-        st.info("👆 Paste content above and click Analyse")
-
-        else:
-        st.info("Enter text and click Analyse")
+# ── Default State ─────────────────────────────────────────
+else:
+    st.info("👆 Paste content above and click Analyse")
