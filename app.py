@@ -113,8 +113,8 @@ if analyse and text_input.strip():
     elif analyse:
     st.warning("⚠️ Please enter text to analyse")
 
-    else:
-    st.info("👆 Paste content above and click Analyse")
+        else:
+        st.info("👆 Paste content above and click Analyse")
 
-    else:
-    st.info("Enter text and click Analyse")
+        else:
+        st.info("Enter text and click Analyse")
