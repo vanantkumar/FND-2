@@ -110,11 +110,11 @@ if analyse and text_input.strip():
     st.write(f"Real Score: {result['real_score']}")
     st.write(f"Fake Score: {result['fake_score']}")
 
-elif analyse:
+    elif analyse:
     st.warning("⚠️ Please enter text to analyse")
 
-else:
+    else:
     st.info("👆 Paste content above and click Analyse")
 
-else:
-        st.info("Enter text and click Analyse")
+    else:
+    st.info("Enter text and click Analyse")
