@@ -351,12 +351,11 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
     
-
-                if st.button(f"Analyse →", key=f"art_{i}"):
+            if st.button(f"Analyse →", key=f"art_{i}"):
                     st.session_state.selected_article = i
 
-        with col_detail:
-            st.markdown('<div class="section-label">Detail analysis</div>', unsafe_allow_html=True)
+              with col_detail:
+               st.markdown('<div class="section-label">Detail analysis</div>', unsafe_allow_html=True)
 
             idx = st.session_state.selected_article
             if idx is not None and idx < len(articles):
