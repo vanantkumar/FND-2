@@ -2,11 +2,11 @@ import streamlit as st
 import time
 from model import FakeNewsClassifier
 
-# ── Page config ─────────────────────────────────────────
+# ── Page Config ─────────────────────────────────────────
 st.set_page_config(
     page_title="Fake News Detector",
     page_icon="🔍",
-    layout="wide"
+    layout="centered"
 )
 
 # ── Load Model ─────────────────────────────────────────
@@ -18,91 +18,103 @@ model = load_model()
 
 # ── Header ─────────────────────────────────────────
 st.markdown("""
-<h1 style='font-family:DM Serif Display;'>
-<span style='color:red;'>FAKE NEWS <span style='color:blue;'>DETECTOR</span>
+<h1 style='text-align:center;font-family:DM Serif Display;'>
+ <span style='color:red;'>FAKE  <span style='color:blue;'> NEWS <span style='color:black;'>DETECTOR</span>
 </h1>
 """, unsafe_allow_html=True)
 
-# ── Layout ─────────────────────────────────────────
-col_input, col_result = st.columns([1, 1])
+st.markdown("---")
 
 # ── INPUT SECTION ─────────────────────────────────────────
-with col_input:
-    st.subheader("Input NEWS")
+st.subheader("📝 Enter News Content")
 
-    text_input = st.text_area(
-        "Enter News",
-        placeholder="Paste news article or headline...",
-        height=200
-    )
+text_input = st.text_area(
+    "",
+    placeholder="Paste a news article / headline",
+    height=200
+)
 
-    analyse = st.button("Analyse")
+analyse = st.button("🔍 Analyse", use_container_width=True)
+
+st.markdown("---")
 
 # ── RESULT SECTION ─────────────────────────────────────────
-with col_result:
-    st.subheader("Result")
+if analyse and text_input.strip():
 
-    if analyse and text_input.strip():
+    with st.spinner("Analyzing..."):
+        time.sleep(0.3)
+        result = model.predict(text_input)
 
-        with st.spinner("Analyzing..."):
-            time.sleep(0.3)
-            result = model.predict(text_input)
+    r = result['real_prob']
 
-        r = result['real_prob']
+    # ── Verdict Logic ─────────────────────────
+    if r >= 65:
+        label = "✅ Likely Real"
+        color = "#27ae60"
+    elif r <= 35:
+        label = "❌ Likely Fake"
+        color = "#e74c3c"
+    else:
+        label = "⚠️ Uncertain"
+        color = "#f39c12"
 
-        # ── Verdict Logic ─────────────────────────
-        if r >= 65:
-            label = "✅ Likely Real"
-            color = "green"
-        elif r <= 35:
-            label = "❌ Likely Fake"
-            color = "red"
-        else:
-            label = "⚠️ Uncertain"
-            color = "orange"
+    # ── Verdict Card ─────────────────────────
+    st.markdown(f"""
+    <div style="padding:20px;border-radius:10px;border:2px solid {color};text-align:center;">
+        <h2 style="color:{color};margin-bottom:5px;">{label}</h2>
+        <p>Confidence Score: <b>{r}%</b></p>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # ── Display Result ─────────────────────────
-        st.markdown(f"""
-        <div style="padding:15px;border-radius:10px;border:2px solid {color};">
-            <h2 style="color:{color};">{label}</h2>
-            <p>Confidence: <b>{r}%</b></p>
-        </div>
-        """, unsafe_allow_html=True)
+    # ── Progress Bar ─────────────────────────
+    st.progress(r / 100)
 
-        # ── Metrics ─────────────────────────
-        f = result['features']
+    st.markdown("---")
 
-        st.write("### 📌 Analysis Metrics")
-        st.write(f"Words: {f['word_count']}")
-        st.write(f"Sensational Words: {f['sensational']}")
-        st.write(f"CAPS Ratio: {f['caps_ratio']}%")
-        st.write(f"Hedges: {f['hedges']}")
-        st.write(f"Exclamations: {f['exclaims']}")
+    # ── Metrics ─────────────────────────
+    st.subheader("📊 Analysis Metrics")
 
-        # ── Vocabulary Signals ─────────────────────────
-        st.write("### 🧠 Vocabulary Signals")
+    f = result['features']
 
-        st.write("**Fake Indicators:**")
-        if result['matched_fake']:
-            st.write(", ".join(result['matched_fake']))
-        else:
-            st.write("None")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Words", f['word_count'])
+    col2.metric("Sensational", f['sensational'])
+    col3.metric("CAPS %", f['caps_ratio'])
 
-        st.write("**Real Indicators:**")
-        if result['matched_real']:
-            st.write(", ".join(result['matched_real']))
-        else:
-            st.write("None")
+    col4, col5 = st.columns(2)
+    col4.metric("Hedges", f['hedges'])
+    col5.metric("Exclamations", f['exclaims'])
 
-        # ── Score Breakdown ─────────────────────────
-        st.write("### 📊 Score Breakdown")
+    st.markdown("---")
 
-        st.progress(r / 100)
-        st.write(f"Real Score: {result['real_score']}")
-        st.write(f"Fake Score: {result['fake_score']}")
+    # ── Vocabulary Signals ─────────────────────────
+    st.subheader("🧠 Vocabulary Signals")
 
-    elif analyse:
-        st.warning("⚠️ Please enter text first")
+    st.write("**Fake Indicators:**")
+    if result['matched_fake']:
+        st.write(", ".join(result['matched_fake']))
+    else:
+        st.write("None")
+
+    st.write("**Real Indicators:**")
+    if result['matched_real']:
+        st.write(", ".join(result['matched_real']))
+    else:
+        st.write("None")
+
+    st.markdown("---")
+
+    # ── Score Breakdown ─────────────────────────
+    st.subheader("📊 Score Breakdown")
+
+    st.write(f"Real Score: {result['real_score']}")
+    st.write(f"Fake Score: {result['fake_score']}")
+
+elif analyse:
+    st.warning("⚠️ Please enter text to analyse")
+
+else:
+    st.info("👆 Paste content above and click Analyse")
 
     else:
         st.info("Enter text and click Analyse")
