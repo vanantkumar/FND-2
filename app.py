@@ -9,7 +9,7 @@ from news_fetcher import fetch_news
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Veridect · Fake News Detector",
+    page_title="Fake News Detector",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -232,15 +232,13 @@ model = load_model()
 st.markdown(f"""
 <div class="masthead">
     <div>
-        <div class="logo">Veri<span>dect</span></div>
-        <div class="tagline">ML-powered · Naive Bayes · TF-IDF · Real-time news</div>
+        <div class="logo">FAKE NEWS<span>DETECTOR</span></div>
     </div>
-    <div class="timestamp">{datetime.now().strftime("%d %b %Y, %H:%M")}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ── Tabs ───────────────────────────────────────────────────────────────────────
-tab1, tab2 = st.tabs(["📝  Analyse text", "📡  Live news feed"])
+tab1 = st.tab(["📝  Analyse text"])
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Analyse text
@@ -259,7 +257,7 @@ with tab1:
 
         mode = st.radio(
             "Content type",
-            ["Article", "Headline", "Claim"],
+            ["Article"],
             horizontal=True,
             label_visibility="visible",
         )
@@ -267,8 +265,7 @@ with tab1:
         col_btn, col_info = st.columns([1, 2])
         with col_btn:
             analyse = st.button("Analyse →", use_container_width=True)
-        with col_info:
-            st.caption("Model: Naive Bayes + TF-IDF · Runs locally")
+      
 
     with col_result:
         if analyse and text_input.strip():
@@ -353,68 +350,7 @@ with tab1:
                 <div style="font-size:0.82rem">Results will appear here after analysis</div>
             </div>
             """, unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — Live news feed
-# ═══════════════════════════════════════════════════════════════════════════════
-with tab2:
-    CATEGORIES = {
-        "Top stories": "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",
-        "Technology": "https://news.google.com/rss/search?q=technology&hl=en-IN&gl=IN&ceid=IN:en",
-        "Science": "https://news.google.com/rss/search?q=science&hl=en-IN&gl=IN&ceid=IN:en",
-        "Health": "https://news.google.com/rss/search?q=health&hl=en-IN&gl=IN&ceid=IN:en",
-        "World": "https://news.google.com/rss/search?q=world+news&hl=en-IN&gl=IN&ceid=IN:en",
-        "Business": "https://news.google.com/rss/search?q=business&hl=en-IN&gl=IN&ceid=IN:en",
-    }
-
-    top_row = st.columns([3, 1])
-    with top_row[0]:
-        cat = st.selectbox("Category", list(CATEGORIES.keys()), label_visibility="collapsed")
-    with top_row[1]:
-        refresh = st.button("⟳  Refresh feed", use_container_width=True)
-
-    feed_url = CATEGORIES[cat]
-
-    with st.spinner(f"Fetching {cat}..."):
-        articles = fetch_news(feed_url, max_items=14)
-
-    if not articles:
-        st.error("Could not load the news feed. Check your internet connection.")
-    else:
-        st.caption(f"{len(articles)} articles · {cat} · {datetime.now().strftime('%H:%M:%S')}")
-        st.markdown('<hr class="rule">', unsafe_allow_html=True)
-
-        col_list, col_detail = st.columns([1, 1], gap="large")
-
-        with col_list:
-            st.markdown('<div class="section-label">Articles</div>', unsafe_allow_html=True)
-
-            if "selected_article" not in st.session_state:
-                st.session_state.selected_article = None
-
-            for i, art in enumerate(articles):
-                result = model.predict(art["title"] + " " + art.get("description", ""))
-                r = result["real_prob"]
-                if r >= 65:
-                    badge = '<span class="badge-real">Likely Real</span>'
-                elif r <= 35:
-                    badge = '<span class="badge-fake">Likely Fake</span>'
-                else:
-                    badge = '<span class="badge-uncertain">Uncertain</span>'
-
-                src = art.get("source", "Unknown")
-                desc = (art.get("description", "") or "")[:120] + "…"
-
-                st.markdown(f"""
-                <div class="news-card">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                        <div class="news-card-title">{art['title'][:110]}</div>
-                        {badge}
-                    </div>
-                    <div class="news-card-meta">{src} · {r}% credible</div>
-                    <div class="news-card-desc">{desc}</div>
-                </div>
-                """, unsafe_allow_html=True)
+    
 
                 if st.button(f"Analyse →", key=f"art_{i}"):
                     st.session_state.selected_article = i
